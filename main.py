@@ -75,7 +75,7 @@ def main():
 
     db = JobDatabase(app_config.settings.db_path)
     job_filter = JobFilter(app_config.filters)
-    notifier = NtfyNotifier(app_config.settings.ntfy_topic)
+    notifier = NtfyNotifier(app_config.settings.ntfy_topic, email=app_config.settings.email)
 
     all_new_matches: List[JobMatch] = []
 
@@ -104,7 +104,8 @@ def main():
                 title=r_job.title,
                 location=r_job.location,
                 url=r_job.url,
-                description=r_job.description
+                description=r_job.description,
+                resume_tag=comp.extra.get("resume_tag", "")
             )
             if match:
                 # Check if already in SQLite DB
