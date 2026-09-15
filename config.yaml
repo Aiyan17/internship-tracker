@@ -1,7 +1,8 @@
 # Internship Watcher Configuration
 
 settings:
-  ntfy_topic: "my_internship_alerts_9872"  # Change to your custom ntfy.sh topic
+  ntfy_topic: "my_internship_alerts_8832"  # Change to your custom ntfy.sh topic
+  email: "aaahme23@asu.edu"
   request_delay_seconds: 1.5
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) InternshipWatcher/1.0"
   db_path: "job_state.db"
