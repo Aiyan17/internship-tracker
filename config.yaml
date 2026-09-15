@@ -1,0 +1,115 @@
+# Internship Watcher Configuration
+
+settings:
+  ntfy_topic: "my_internship_alerts_9872"  # Change to your custom ntfy.sh topic
+  request_delay_seconds: 1.5
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) InternshipWatcher/1.0"
+  db_path: "job_state.db"
+
+# Keyword Filters
+filters:
+  # Title must contain at least one of these (case-insensitive)
+  role_keywords:
+    - "intern"
+    - "internship"
+    - "co-op"
+    - "coop"
+
+  # Title OR Description must contain at least one of these (case-insensitive)
+  topic_keywords:
+    - "power"
+    - "analog"
+    - "hardware"
+    - "pcb"
+    - "fpga"
+    - "electrical"
+    - "embedded"
+    - "battery"
+    - "validation"
+    - "test"
+
+  # Location filter: Must contain United States or Remote
+  location_include:
+    - "united states"
+    - "us"
+    - "usa"
+    - "remote"
+
+  # Flagging filter: If found in description, role is FLAGGED with warning badge (not dropped)
+  visa_flag_keywords:
+    - "u.s. citizen"
+    - "us citizen"
+    - "u.s. person"
+    - "us person"
+    - "security clearance"
+    - "itar"
+    - "export control"
+
+# Target Companies Configuration
+companies:
+  - name: "Micron"
+    adapter: "workday"
+    subdomain: "micron.wd1.myworkdayjobs.com"
+    client_path: "External"
+
+  - name: "Medtronic"
+    adapter: "workday"
+    subdomain: "medtronic.wd1.myworkdayjobs.com"
+    client_path: "MedtronicCareers"
+
+  - name: "AMD"
+    adapter: "workday"
+    subdomain: "amd.wd1.myworkdayjobs.com"
+    client_path: "AMD_Careers"
+
+  - name: "Applied Materials"
+    adapter: "workday"
+    subdomain: "amat.wd1.myworkdayjobs.com"
+    client_path: "External"
+
+  - name: "Lam Research"
+    adapter: "workday"
+    subdomain: "lamresearch.wd1.myworkdayjobs.com"
+    client_path: "LamCareers"
+
+  - name: "KLA"
+    adapter: "workday"
+    subdomain: "kla.wd1.myworkdayjobs.com"
+    client_path: "KLA_Careers"
+
+  - name: "Garmin"
+    adapter: "workday"
+    subdomain: "garmin.wd1.myworkdayjobs.com"
+    client_path: "Garmin_Careers"
+
+  - name: "onsemi"
+    adapter: "workday"
+    subdomain: "onsemi.wd1.myworkdayjobs.com"
+    client_path: "ON_Careers"
+
+  - name: "Microchip"
+    adapter: "workday"
+    subdomain: "microchip.wd5.myworkdayjobs.com"
+    client_path: "External"
+
+  - name: "NXP"
+    adapter: "workday"
+    subdomain: "nxp.wd3.myworkdayjobs.com"
+    client_path: "careers"
+
+  - name: "Arm"
+    adapter: "workday"
+    subdomain: "arm.wd3.myworkdayjobs.com"
+    client_path: "Arm_Careers"
+
+  - name: "Texas Instruments"
+    adapter: "phenom"
+    site_url: "https://careers.ti.com"
+
+  - name: "Siemens"
+    adapter: "eightfold"
+    domain: "jobs.siemens.com"
+
+  - name: "TSMC Arizona"
+    adapter: "greenhouse"
+    board_token: "tsmcarizona"
