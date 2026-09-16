@@ -1,8 +1,8 @@
 # Internship Watcher Configuration
 
 settings:
-  ntfy_topic: "aiyan_internships_8832"  # ntfy.sh topic (override via NTFY_TOPIC env var)
-  email: ""  # Optional email notification (override via EMAIL_NOTIFY env var)
+  ntfy_topic: ""  # Set a private, newly generated topic using NTFY_TOPIC
+  email: ""  # Legacy compatibility field; delivery is ntfy only
   request_delay_seconds: 1.5
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) InternshipWatcher/1.0"
   db_path: "job_state.db"
@@ -16,7 +16,7 @@ filters:
     - "co-op"
     - "coop"
 
-  # Title OR Description must contain at least one of these (case-insensitive)
+  # Title must match one keyword, OR description must match two distinct keywords
   topic_keywords:
     - "power"
     - "analog"
@@ -49,6 +49,10 @@ filters:
     - "security clearance"
     - "itar"
     - "export control"
+    - "permanent resident"
+    - "green card"
+    - "without sponsorship"
+    - "no sponsorship"
 
 # Target Companies Configuration (Grouped by Category & Resume Tag)
 companies:
@@ -58,8 +62,10 @@ companies:
   - name: "Texas Instruments"
     category: "power_and_analog_semis"
     resume_tag: "POWER"
-    adapter: "phenom"
+    adapter: "oracle"
     site_url: "https://careers.ti.com"
+    api_base: "https://edbz.fa.us2.oraclecloud.com/hcmRestApi/resources/latest"
+    site_number: "CX"
 
   - name: "Analog Devices"
     category: "power_and_analog_semis"
@@ -177,8 +183,8 @@ companies:
   - name: "Siemens"
     category: "power_conversion_and_energy"
     resume_tag: "POWER"
-    adapter: "eightfold"
-    domain: "jobs.siemens.com"
+    adapter: "avature"
+    search_url: "https://jobs.siemens.com/en_US/externaljobs/SearchJobs"
 
   - name: "Siemens Energy"
     category: "power_conversion_and_energy"
@@ -346,8 +352,9 @@ companies:
   - name: "SiFive"
     category: "digital_semis_and_compute"
     resume_tag: "SEMICONDUCTOR"
-    adapter: "greenhouse"
-    board_token: "sifive"
+    adapter: "workday"
+    subdomain: "sifive.wd1.myworkdayjobs.com"
+    client_path: "sifivecareers"
 
   - name: "Tenstorrent"
     category: "digital_semis_and_compute"

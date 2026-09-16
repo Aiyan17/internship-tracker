@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from job_tracker.adapters.base import BaseAdapter, RawJob
+from job_tracker.adapters.base import AdapterError, BaseAdapter, RawJob
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +19,13 @@ class WorkdayAdapter(BaseAdapter):
         tenant = self.kwargs.get("tenant", subdomain.split(".")[0] if subdomain else "")
 
         if not subdomain:
-            logger.error(f"[{self.company_name}] Missing 'subdomain' in config.")
-            return []
+            raise AdapterError("Missing 'subdomain' in config")
 
         api_url = f"https://{subdomain}/wday/cxs/{tenant}/{client_path}/jobs"
         jobs: List[RawJob] = []
         limit = 20
-        max_jobs_to_fetch = 60  # Cap pagination for safety
+        max_jobs_to_fetch = int(self.kwargs.get("max_pages", 100)) * limit
+        seen_ids = set()
 
         headers = {
             "Accept": "application/json",
@@ -46,18 +46,14 @@ class WorkdayAdapter(BaseAdapter):
                     "appliedFacets": {}
                 }
 
-                resp = self.fetch_url(api_url, method="POST", json=payload, headers=headers)
-                if not resp:
-                    break
-
-                try:
-                    data = resp.json()
-                except Exception as e:
-                    logger.error(f"[{self.company_name}] Failed to parse JSON response: {e}")
-                    break
-
-                postings = data.get("jobPostings", [])
+                data = self.fetch_json(api_url, method="POST", json=payload, headers=headers)
+                postings = self.require_list(data, "jobPostings")
+                total = data.get("total")
+                if not isinstance(total, int) or total < 0:
+                    raise AdapterError("Workday response has no valid total")
                 if not postings:
+                    if offset < total:
+                        raise AdapterError("Workday returned an empty page before its reported total")
                     break
 
                 for item in postings:
@@ -71,6 +67,9 @@ class WorkdayAdapter(BaseAdapter):
 
                     if not job_id:
                         job_id = title
+                    if job_id in seen_ids:
+                        continue
+                    seen_ids.add(job_id)
 
                     job_url = f"https://{subdomain}/en-US/{client_path}{external_path}" if external_path else f"https://{subdomain}"
 
@@ -79,16 +78,17 @@ class WorkdayAdapter(BaseAdapter):
                     title_lower = title.lower()
                     if any(kw in title_lower for kw in role_keywords) and external_path:
                         detail_api_url = f"https://{subdomain}/wday/cxs/{tenant}/{client_path}{external_path}"
-                        detail_resp = self.fetch_url(detail_api_url, method="GET", headers={"Accept": "application/json"})
-                        if detail_resp and detail_resp.status_code == 200:
-                            try:
-                                d_data = detail_resp.json()
-                                job_info = d_data.get("jobPostingInfo", {})
-                                description = job_info.get("jobDescription", "")
-                                if not location and job_info.get("location"):
-                                    location = job_info.get("location")
-                            except Exception as e:
-                                logger.debug(f"[{self.company_name}] Detail parse error for {job_id}: {e}")
+                        d_data = self.fetch_json(detail_api_url, headers={"Accept": "application/json"})
+                        job_info = d_data.get("jobPostingInfo")
+                        if not isinstance(job_info, dict):
+                            raise AdapterError(f"Missing Workday jobPostingInfo for {job_id}")
+                        description = job_info.get("jobDescription", "")
+                        locations = [job_info.get("location") or location]
+                        locations.extend(job_info.get("additionalLocations") or [])
+                        country = (job_info.get("country") or {}).get("descriptor", "")
+                        if country:
+                            locations.append(country)
+                        location = "; ".join(str(loc) for loc in locations if loc)
 
                     jobs.append(RawJob(
                         job_id=job_id,
@@ -98,10 +98,11 @@ class WorkdayAdapter(BaseAdapter):
                         description=description
                     ))
 
-                total = data.get("total", 0)
                 offset += limit
                 if offset >= total:
                     break
+            else:
+                raise AdapterError(f"Workday exceeded the {max_jobs_to_fetch}-posting safety limit; increase max_pages")
 
         # Deduplicate raw jobs by job_id
         seen_ids = set()

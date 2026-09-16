@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from job_tracker.adapters.base import BaseAdapter, RawJob
+from job_tracker.adapters.base import AdapterError, BaseAdapter, RawJob
 
 logger = logging.getLogger(__name__)
 
@@ -14,25 +14,15 @@ class EightfoldAdapter(BaseAdapter):
     def fetch_jobs(self) -> List[RawJob]:
         domain = self.kwargs.get("domain")
         if not domain:
-            logger.error(f"[{self.company_name}] Missing 'domain' in config.")
-            return []
+            raise AdapterError("Missing 'domain' in config")
 
         results: List[RawJob] = []
         queries = ["intern", "co-op"]
 
         for query in queries:
             api_url = f"https://{domain}/api/apply/v2/jobs?start=0&num=50&query={query}"
-            resp = self.fetch_url(api_url, method="GET")
-            if not resp:
-                continue
-
-            try:
-                data = resp.json()
-            except Exception as e:
-                logger.error(f"[{self.company_name}] Failed to parse Eightfold JSON: {e}")
-                continue
-
-            positions = data.get("positions", [])
+            data = self.fetch_json(api_url)
+            positions = self.require_list(data, "positions")
             for item in positions:
                 job_id = str(item.get("id", item.get("position_id", "")))
                 title = item.get("name", item.get("title", ""))

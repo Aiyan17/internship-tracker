@@ -4,6 +4,8 @@ from job_tracker.adapters.greenhouse import GreenhouseAdapter
 from job_tracker.adapters.lever import LeverAdapter
 from job_tracker.adapters.eightfold import EightfoldAdapter
 from job_tracker.adapters.phenom import PhenomAdapter
+from job_tracker.adapters.oracle import OracleAdapter
+from job_tracker.adapters.avature import AvatureAdapter
 
 ADAPTER_REGISTRY = {
     "workday": WorkdayAdapter,
@@ -11,6 +13,8 @@ ADAPTER_REGISTRY = {
     "lever": LeverAdapter,
     "eightfold": EightfoldAdapter,
     "phenom": PhenomAdapter,
+    "oracle": OracleAdapter,
+    "avature": AvatureAdapter,
 }
 
 def get_adapter(name: str, **kwargs) -> BaseAdapter:

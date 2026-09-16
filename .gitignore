@@ -30,3 +30,8 @@ ENV/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local settings and runtime state
+.env
+.state/
+watcher.log

@@ -1,7 +1,7 @@
 import logging
 import re
 from typing import List
-from job_tracker.adapters.base import BaseAdapter, RawJob
+from job_tracker.adapters.base import AdapterError, BaseAdapter, RawJob
 
 logger = logging.getLogger(__name__)
 
@@ -15,21 +15,11 @@ class GreenhouseAdapter(BaseAdapter):
     def fetch_jobs(self) -> List[RawJob]:
         board_token = self.kwargs.get("board_token")
         if not board_token:
-            logger.error(f"[{self.company_name}] Missing 'board_token' in config.")
-            return []
+            raise AdapterError("Missing 'board_token' in config")
 
         api_url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true"
-        resp = self.fetch_url(api_url, method="GET")
-        if not resp:
-            return []
-
-        try:
-            data = resp.json()
-        except Exception as e:
-            logger.error(f"[{self.company_name}] Failed to parse Greenhouse JSON response: {e}")
-            return []
-
-        raw_jobs = data.get("jobs", [])
+        data = self.fetch_json(api_url)
+        raw_jobs = self.require_list(data, "jobs")
         results: List[RawJob] = []
 
         for item in raw_jobs:

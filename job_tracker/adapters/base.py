@@ -8,6 +8,10 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+class AdapterError(RuntimeError):
+    """A source could not be checked; distinct from a successful empty result."""
+
+
 class RawJob:
     def __init__(
         self,
@@ -70,8 +74,7 @@ class BaseAdapter(ABC):
 
     def fetch_url(self, url: str, method: str = "GET", **kwargs) -> Optional[requests.Response]:
         if not self.is_allowed_by_robots(url):
-            logger.warning(f"[{self.company_name}] Fetching {url} blocked by robots.txt rules.")
-            return None
+            raise AdapterError(f"[{self.company_name}] Fetching {url} blocked by robots.txt rules.")
 
         if self.delay_seconds > 0:
             time.sleep(self.delay_seconds)
@@ -83,14 +86,25 @@ class BaseAdapter(ABC):
                 resp = self.session.get(url, timeout=15, **kwargs)
 
             if resp.status_code == 403 or resp.status_code == 429:
-                logger.warning(f"[{self.company_name}] Access blocked/rate-limited (HTTP {resp.status_code}) at {url}.")
-                return None
+                raise AdapterError(f"[{self.company_name}] Access blocked/rate-limited (HTTP {resp.status_code}) at {url}.")
 
             resp.raise_for_status()
             return resp
-        except Exception as e:
-            logger.error(f"[{self.company_name}] Failed to fetch {url}: {e}")
-            return None
+        except requests.RequestException as e:
+            raise AdapterError(f"[{self.company_name}] Failed to fetch {url}: {e}") from e
+
+    def fetch_json(self, url: str, method: str = "GET", **kwargs):
+        response = self.fetch_url(url, method=method, **kwargs)
+        try:
+            return response.json()
+        except ValueError as e:
+            raise AdapterError(f"[{self.company_name}] Expected JSON from {url}") from e
+
+    @staticmethod
+    def require_list(data, key):
+        if not isinstance(data, dict) or not isinstance(data.get(key), list):
+            raise AdapterError(f"Response is missing the expected '{key}' array")
+        return data[key]
 
     @abstractmethod
     def fetch_jobs(self) -> List[RawJob]:
