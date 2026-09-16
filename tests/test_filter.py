@@ -74,6 +74,29 @@ class TestJobFilter(unittest.TestCase):
         )
         self.assertIsNone(match)
 
+    def test_us_city_state_and_country_spellings(self):
+        for location in ['Austin, TX', 'Santa Clara, California', 'Boston, MA 02110',
+                         'U.S.', 'U.S.A.', 'Boise; United States']:
+            with self.subTest(location=location):
+                self.assertIsNotNone(self.filter_engine.evaluate_job(
+                    'Example', '1', 'Hardware Intern', location, 'https://example.com'))
+
+    def test_foreign_locations_do_not_match_state_codes_or_boilerplate(self):
+        for location in ['Austin, Australia', 'Vancouver, BC, Canada', 'Georgia', 'Berlin, Germany',
+                         'London, England', 'Toronto, ON']:
+            with self.subTest(location=location):
+                self.assertIsNone(self.filter_engine.evaluate_job(
+                    'Example', '1', 'Hardware Intern', location, 'https://example.com',
+                    'Our headquarters are in the United States.'))
+
+    def test_html_is_normalized_and_itar_does_not_match_military(self):
+        match = self.filter_engine.evaluate_job(
+            'Example', '1', 'Hardware Intern', 'USA', 'https://example.com',
+            'Military veterans welcome. Must work &lt;b&gt;without&lt;/b&gt; sponsorship.')
+        self.assertTrue(match.visa_warning)
+        self.assertIn('Without Sponsorship', match.visa_flags)
+        self.assertNotIn('Itar', match.visa_flags)
+
 
 if __name__ == "__main__":
     unittest.main()

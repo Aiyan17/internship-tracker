@@ -1,13 +1,19 @@
 import sqlite3
 import datetime
+from pathlib import Path
 from typing import Tuple, List, Optional
 
 
 class JobDatabase:
-    def __init__(self, db_path: str = "job_state.db"):
+    def __init__(self, db_path: str = "job_state.db", read_only: bool = False):
         self.db_path = db_path
-        self.conn = sqlite3.connect(self.db_path)
-        self.create_tables()
+        if read_only and Path(db_path).is_file():
+            self.conn = sqlite3.connect(Path(db_path).resolve().as_uri() + "?mode=ro", uri=True)
+        else:
+            if not read_only and db_path != ":memory:":
+                Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            self.conn = sqlite3.connect(":memory:" if read_only else db_path)
+            self.create_tables()
 
     def create_tables(self):
         with self.conn:

@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from job_tracker.adapters.base import BaseAdapter, RawJob
+from job_tracker.adapters.base import AdapterError, BaseAdapter, RawJob
 
 logger = logging.getLogger(__name__)
 
@@ -14,22 +14,13 @@ class LeverAdapter(BaseAdapter):
     def fetch_jobs(self) -> List[RawJob]:
         site_name = self.kwargs.get("site_name") or self.kwargs.get("company_slug")
         if not site_name:
-            logger.error(f"[{self.company_name}] Missing 'site_name' in config.")
-            return []
+            raise AdapterError("Missing 'site_name' in config")
 
         api_url = f"https://api.lever.co/v0/postings/{site_name}?mode=json"
-        resp = self.fetch_url(api_url, method="GET")
-        if not resp:
-            return []
-
-        try:
-            data = resp.json()
-        except Exception as e:
-            logger.error(f"[{self.company_name}] Failed to parse Lever JSON response: {e}")
-            return []
+        data = self.fetch_json(api_url)
 
         if not isinstance(data, list):
-            return []
+            raise AdapterError("Lever response must be a list")
 
         results: List[RawJob] = []
         for item in data:
