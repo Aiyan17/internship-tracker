@@ -1,8 +1,8 @@
 # Internship Watcher Configuration
 
 settings:
-  ntfy_topic: "aiyan_internships_8832"  # Custom ntfy.sh topic
-  email: "aaahme23@asu.edu"
+  ntfy_topic: "aiyan_internships_8832"  # ntfy.sh topic (override via NTFY_TOPIC env var)
+  email: ""  # Optional email notification (override via EMAIL_NOTIFY env var)
   request_delay_seconds: 1.5
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) InternshipWatcher/1.0"
   db_path: "job_state.db"
