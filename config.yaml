@@ -185,6 +185,12 @@ companies:
     resume_tag: "POWER"
     adapter: "avature"
     search_url: "https://jobs.siemens.com/en_US/externaljobs/SearchJobs"
+    # Siemens' "intern" search alone returns 999+ results globally (6/page, no
+    # further server-side scoping available), which blows the daily job's time
+    # budget at the adapter's default max_pages=500. Capped to keep each run
+    # bounded; this means only the newest ~120 postings per search term are
+    # seen, not full global coverage.
+    max_pages: 10
 
   - name: "Siemens Energy"
     category: "power_conversion_and_energy"

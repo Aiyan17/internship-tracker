@@ -1,10 +1,13 @@
 """Siemens' public Avature search pages (not the retired Eightfold API)."""
+import logging
 from urllib.parse import urlencode, urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
 from job_tracker.adapters.base import AdapterError, BaseAdapter, RawJob
 from job_tracker.filter import has_word
+
+logger = logging.getLogger(__name__)
 
 
 class AvatureAdapter(BaseAdapter):
@@ -53,5 +56,8 @@ class AvatureAdapter(BaseAdapter):
                 if urlparse(url).netloc != urlparse(search_url).netloc:
                     raise AdapterError("Avature pagination left the configured career site")
             else:
-                raise AdapterError("Avature exceeded max_pages; result would be incomplete")
+                logger.warning(
+                    f"[{self.company_name}] Avature hit max_pages ({self.kwargs.get('max_pages', 500)}) "
+                    f"searching '{term}'; more results exist but were not fetched this run."
+                )
         return list(results.values())
