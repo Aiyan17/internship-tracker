@@ -1,7 +1,7 @@
 import argparse
 import logging
 import sys
-from typing import List
+from typing import List, Dict
 
 # Ensure UTF-8 output on Windows terminals
 if sys.platform == "win32":
@@ -78,6 +78,8 @@ def main():
     notifier = NtfyNotifier(app_config.settings.ntfy_topic, email=app_config.settings.email)
 
     all_new_matches: List[JobMatch] = []
+    company_stats: Dict[str, int] = {}
+    failed_adapters: List[str] = []
 
     logger.info(f"Checking {len(target_companies)} companies...")
 
@@ -92,8 +94,10 @@ def main():
                 **comp.extra
             )
             raw_jobs = adapter.fetch_jobs()
+            company_stats[comp.name] = len(raw_jobs)
         except Exception as e:
             logger.error(f"[{comp.name}] Error running adapter '{comp.adapter}': {e}. Skipping.")
+            failed_adapters.append(comp.name)
             continue
 
         company_matches = 0
@@ -113,17 +117,30 @@ def main():
                 if not already_seen:
                     company_matches += 1
                     all_new_matches.append(match)
-                    if not args.dry_run:
-                        db.mark_seen(comp.name, match.job_id, match.title, match.url)
 
         logger.info(f"[{comp.name}] Found {company_matches} new match(es) passing filters.")
 
     logger.info(f"Total new matches found across all checked companies: {len(all_new_matches)}")
 
+    # Transaction ordering: Send notification FIRST, then mark jobs as seen in SQLite ONLY after send succeeds!
     if all_new_matches:
-        notifier.send_notification(all_new_matches, dry_run=args.dry_run)
+        successful_matches = notifier.send_notification(all_new_matches, dry_run=args.dry_run)
+        if not args.dry_run:
+            marked_count = 0
+            for match in successful_matches:
+                if db.mark_seen(match.company, match.job_id, match.title, match.url):
+                    marked_count += 1
+            logger.info(f"Recorded {marked_count} new job(s) in SQLite database state.")
     else:
         logger.info("No new matches found. No notification sent.")
+
+    # Scraper Health Summary Report
+    logger.info("=" * 50)
+    logger.info("SCRAPER HEALTH SUMMARY")
+    logger.info(f"• Total Companies Checked: {len(target_companies)}")
+    logger.info(f"• Adapters Failed: {len(failed_adapters)} {failed_adapters if failed_adapters else ''}")
+    logger.info(f"• Companies returning 0 jobs: {sum(1 for v in company_stats.values() if v == 0)}")
+    logger.info("=" * 50)
 
     db.close()
     logger.info("Run complete.")
