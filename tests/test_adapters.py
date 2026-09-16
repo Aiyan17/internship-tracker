@@ -130,3 +130,25 @@ class TestAvature(unittest.TestCase):
         with patch.object(adapter, 'fetch_url', return_value=Mock(text='<html>Error</html>')):
             with self.assertRaises(AdapterError):
                 adapter.fetch_jobs()
+
+    def test_exceeding_max_pages_returns_partial_results_instead_of_failing(self):
+        # Siemens' public search has no server-side way to scope beyond a raw
+        # keyword match (999+ results for "intern" alone), so any page cap
+        # small enough to run in a bounded time will always be hit. Treat
+        # that as a coverage warning, not a hard failure of the whole company.
+        adapter = AvatureAdapter(
+            company_name='Siemens', search_url='https://example.com/SearchJobs',
+            search_terms=['intern'], max_pages=1,
+        )
+        self.addCleanup(adapter.session.close)
+
+        def fetch(url):
+            if '/JobDetail/' in url:
+                return Mock(text='<article class="article--details">Electrical power design internship</article>')
+            return Mock(text='<article class="article--result">'
+                             '<h3><a href="/JobDetail/1">Hardware Intern</a></h3>'
+                             '<span class="list-item-location">Austin, Texas, United States</span></article>'
+                             '<a href="/SearchJobs/intern?folderOffset=6">Next &gt;&gt;</a>')
+        with patch.object(adapter, 'fetch_url', side_effect=fetch):
+            jobs = adapter.fetch_jobs()
+        self.assertEqual([j.job_id for j in jobs], ['1'])
