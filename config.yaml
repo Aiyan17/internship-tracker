@@ -54,6 +54,22 @@ filters:
     - "without sponsorship"
     - "no sponsorship"
 
+  # Reject filter: if found in the TITLE, the role is dropped even if the
+  # description mentions topic keywords (e.g. "Accounting Intern" at a power
+  # company whose boilerplate description mentions "power" and "test").
+  title_exclude_keywords:
+    - "sales"
+    - "accounting"
+    - "finance"
+    - "marketing"
+    - "human resources"
+    - "recruiting"
+    - "recruiter"
+    - "legal"
+    - "communications"
+    - "procurement"
+    - "audit"
+
 # Target Companies Configuration (Grouped by Category & Resume Tag)
 companies:
   # ==========================================

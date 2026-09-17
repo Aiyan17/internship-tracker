@@ -14,6 +14,10 @@ class TestJobFilter(unittest.TestCase):
                 "permanent resident", "green card", "without sponsorship",
                 "no sponsorship", "sponsorship", "authorized to work",
                 "security clearance", "itar", "export control", "citizenship"
+            ],
+            title_exclude_keywords=[
+                "sales", "accounting", "finance", "marketing", "human resources",
+                "recruiting", "recruiter", "legal", "communications", "procurement", "audit"
             ]
         )
         self.filter_engine = JobFilter(self.filters)
@@ -88,6 +92,30 @@ class TestJobFilter(unittest.TestCase):
                 self.assertIsNone(self.filter_engine.evaluate_job(
                     'Example', '1', 'Hardware Intern', location, 'https://example.com',
                     'Our headquarters are in the United States.'))
+
+    def test_non_technical_roles_rejected_despite_technical_boilerplate(self):
+        # Reproduces real false positives from Siemens/Marvell/GlobalFoundries:
+        # a non-technical role's generic company description mentions 2+
+        # topic keywords, which used to be enough to pass the topic filter.
+        cases = [
+            ("Accounting Intern - Summer 2027",
+             "Join our Power business unit and support test cost accounting."),
+            ("Technical Sales Intern, BS - Summer 2027",
+             "Partner with our semiconductor validation and test teams to support customers."),
+            ("Finance & Operations Analyst Intern",
+             "Support power and hardware manufacturing operations financial planning."),
+        ]
+        for title, description in cases:
+            with self.subTest(title=title):
+                match = self.filter_engine.evaluate_job(
+                    'Example', '1', title, 'USA', 'https://example.com', description)
+                self.assertIsNone(match)
+
+    def test_technical_roles_with_title_keyword_still_pass(self):
+        match = self.filter_engine.evaluate_job(
+            'Siemens', '1', 'Electrical Design Engineering Intern', 'Wendell, NC',
+            'https://example.com', 'Support power distribution hardware design.')
+        self.assertIsNotNone(match)
 
     def test_html_is_normalized_and_itar_does_not_match_military(self):
         match = self.filter_engine.evaluate_job(

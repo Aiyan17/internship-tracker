@@ -79,6 +79,13 @@ class JobFilter:
         if not role_matched:
             return None
 
+        # 1.5. Reject clearly non-technical roles (Sales, Accounting, Finance, ...)
+        # by title regardless of topic keywords, since a business-function role
+        # at a technical company routinely mentions topic words in its
+        # boilerplate description without the role itself being technical.
+        if any(has_word(title_text, x_kw) for x_kw in self.filters.title_exclude_keywords):
+            return None
+
         # 2. Topic Matching:
         # Require topic match in TITLE, OR at least 2 distinct topic matches in DESCRIPTION
         title_topic_matches = [t_kw for t_kw in self.filters.topic_keywords if has_word(title_text, t_kw)]

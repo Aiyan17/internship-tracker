@@ -25,6 +25,14 @@ class Filters:
         "u.s. citizen", "us citizen", "u.s. person", "us person",
         "security clearance", "itar", "export control"
     ])
+    # Non-technical roles at technical companies (e.g. "Accounting Intern" at a
+    # power-electronics company) can otherwise pass the topic filter purely
+    # because their boilerplate description mentions 2 topic keywords. A title
+    # match on any of these disqualifies the role regardless of description.
+    title_exclude_keywords: List[str] = field(default_factory=lambda: [
+        "sales", "accounting", "finance", "marketing", "human resources",
+        "recruiting", "recruiter", "legal", "communications", "procurement", "audit"
+    ])
 
 
 @dataclass
@@ -68,6 +76,7 @@ def load_config(config_path: str = "config.yaml") -> AppConfig:
         topic_keywords=[k.lower() for k in f_data.get("topic_keywords", defaults.topic_keywords)],
         location_include=[k.lower() for k in f_data.get("location_include", defaults.location_include)],
         visa_flag_keywords=[k.lower() for k in f_data.get("visa_flag_keywords", defaults.visa_flag_keywords)],
+        title_exclude_keywords=[k.lower() for k in f_data.get("title_exclude_keywords", defaults.title_exclude_keywords)],
     )
 
     companies = []
